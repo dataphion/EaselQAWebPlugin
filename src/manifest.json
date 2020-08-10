@@ -22,9 +22,5 @@
       "all_frames": true
     }
   ],
-  "externally_connectable": {
-    "ids": ["*"],
-    "matches": ["*://localhost/*", "*://ai.dataphion.com/*"]
-  },
-  "permissions": ["tabs", "activeTab", "webRequest", "contextMenus", "downloads", "webNavigation", "notifications", "http://*/", "https://*/", "storage", "unlimitedStorage", "<all_urls>", "debugger"]
+  "permissions": ["tabs", "activeTab", "webRequest", "notifications", "storage", "unlimitedStorage"]
 }

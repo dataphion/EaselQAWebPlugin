@@ -9,19 +9,19 @@ export function giveUrl(endpoint) {
       console.log("hostname ---->", result);
       let host = "";
       if (endpoint === "login") {
-        host = `https://${result.hostname}/auth/local`;
+        host = `${result.hostname}/api/auth/local`;
         resolve(host);
       } else if (endpoint === "strapi_url_graphql") {
-        host = `https://${result.hostname}/graphql`;
+        host = `${result.hostname}/api/graphql`;
         resolve(host);
       } else if (endpoint === "strapi_url") {
-        host = `https://${result.hostname}`;
+        host = `${result.hostname}/api`;
         resolve(host);
       } else if (endpoint === "vision_url") {
-        host = `https://${result.hostname}/vision`;
+        host = `${result.hostname}/vision`;
         resolve(host);
       } else if (endpoint === "googleVision_url") {
-        host = `https://${result.hostname}/vision/api/PageOCR`;
+        host = `${result.hostname}/vision/api/PageOCR`;
         resolve(host);
       }
     });
