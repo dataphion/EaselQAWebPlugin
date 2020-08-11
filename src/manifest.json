@@ -22,5 +22,5 @@
       "all_frames": true
     }
   ],
-  "permissions": ["tabs", "activeTab", "webRequest", "notifications", "storage", "unlimitedStorage"]
+  "permissions": ["<all_urls>","tabs", "activeTab", "webRequest", "notifications", "storage", "unlimitedStorage"]
 }
