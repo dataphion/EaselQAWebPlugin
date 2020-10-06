@@ -4,6 +4,7 @@ import { collectProps, filterxpath } from "../helpers/propsHelpers";
 import { getText, normalizeSpaces } from "../content/utils";
 
 import { LocatorBuilders } from "../helpers/locator-builders";
+import { over } from "lodash";
 // import './record-handler'
 
 // these variables are to get the anchor element
@@ -16,6 +17,8 @@ let previous_ele = null;
 
 let eR = {};
 
+let CURRENT_FOCUSED_ELEMENT = null;
+
 let attached = false;
 export class EventRecorder {
   constructor(window) {
@@ -27,7 +30,7 @@ export class EventRecorder {
     this.frameLocation = frameLocation;
     this.framelocationelement = framelocationelement;
     chrome.runtime.sendMessage({
-      frameLocation: this.frameLocation
+      frameLocation: this.frameLocation,
     });
   }
 
@@ -62,7 +65,7 @@ export class EventRecorder {
    */
 
   // restart the cursor animation
-  onMouseMoveEvent = e => {
+  onMouseMoveEvent = (e) => {
     if (ANCHOR_MODE) {
       clearTimeout(timer);
       const cur = document.getElementById("phion_cursor");
@@ -75,7 +78,7 @@ export class EventRecorder {
     }
   };
 
-  draw = e => {
+  draw = (e) => {
     console.log("grid_mode", GRID_MODE);
     if (previous_ele) {
       previous_ele.style.background = "";
@@ -104,14 +107,16 @@ export class EventRecorder {
     }
   };
 
-  getData = e => {
+  getData = (e) => {
+    // let element = document.getElementById("validation-div");
+    // element.parentNode.removeChild(element);
     if (GRID_MODE) {
       this.getXPath(e.target);
       // GRID_MODE = false;
     }
   };
 
-  getXPath = el => {
+  getXPath = (el) => {
     // CODE TO GET FULL XPATH
     let nodeElem = el;
     const parts = [];
@@ -140,7 +145,7 @@ export class EventRecorder {
     }
     let full_xpath = [parts.length ? "/" + parts.reverse().join("/") : "", "full xpath"];
     console.log("full xpaths from record.js ---->", full_xpath[0]);
-    chrome.storage.local.set({ grid_xpath: full_xpath[0] }, function() {
+    chrome.storage.local.set({ grid_xpath: full_xpath[0] }, function () {
       console.log("Value is set to " + full_xpath[0]);
     });
     GRID_MODE = false;
@@ -148,7 +153,7 @@ export class EventRecorder {
     this.showmsg(full_xpath[0]);
   };
 
-  showmsg = page_xpath => {
+  showmsg = (page_xpath) => {
     // create element to show msg
     var x = document.createElement("div");
     x.setAttribute("id", "capture-msg");
@@ -168,32 +173,348 @@ export class EventRecorder {
     document.body.appendChild(x);
 
     // remove notification after 5sec
-    setTimeout(function() {
+    setTimeout(function () {
       let element = document.getElementById("capture-msg");
       element.parentNode.removeChild(element);
     }, 4000);
   };
 
   // on mouse over, add the dotted outline
-  onMouseOverEvent = e => {
-    // console.log("mouseover element -------------->", e);
-
+  onmouseoverevent = (e) => {
     if (ANCHOR_MODE) {
       e.target.style.outline = "1px dotted red";
     } else {
-      e.target.style.outline = "1px dotted #333";
+      // console.log("current element ---->", e.target.id);
+      // console.log(e.hasAttribute("overlay-ele"));
+      if (
+        e.target.id !== "overlay-ele" &&
+        e.target.id !== "validation-div" &&
+        e.target.id !== "validation-dropdown" &&
+        e.target.id !== "validation-action-row" &&
+        e.target.id !== "validation-action-label" &&
+        e.target.id !== "validation-action-showdetails" &&
+        e.target.id !== "valiadtion-contain-text-header" &&
+        e.target.id !== "validation-contains-input-text" &&
+        e.target.id !== "validation-action-row-element" &&
+        e.target.id !== "validation-save-step-button-container" &&
+        e.target.id !== "validation-save-step-button"
+      ) {
+        console.log(" current ele -------------------->", e);
+        CURRENT_FOCUSED_ELEMENT = e;
+        e.target.style.outline = "2px solid black";
+        // e.target.style.border = "2px solid black";
+      }
+    }
+  };
+
+  showValidationList = async (e, show) => {
+    // console.log("show list -->", e, show);
+    console.log("this --->", this);
+    let _this = this;
+    var x = document.createElement("div");
+
+    if (show === "show") {
+      let validation_type = "text_validation";
+      async function selectValidation(e) {
+        if (e.target.value === "text_validation" || e.target.value === "element_validation") {
+          validation_type = e.target.value;
+        }
+
+        // save step --
+        function saveSteps() {
+          console.log("save steps", validation_type);
+          console.log(_this);
+          _this.record(CURRENT_FOCUSED_ELEMENT, validation_type.toUpperCase(), _this.locatorBuilders.buildAll(CURRENT_FOCUSED_ELEMENT.target), CURRENT_FOCUSED_ELEMENT.target.value);
+          // successfull msg
+          var msg = document.createElement("div");
+          msg.setAttribute("id", "step-created-msg");
+          // x.src = "data:text/html;charset=utf-8," + escape("your selected locator is captured as Grid pagination element");
+          msg.innerText = `Step saved Successfully!`;
+          msg.style;
+          msg.style.bottom = "0";
+          msg.style.top = "0";
+          msg.style.left = "780px";
+          msg.style.cursor = "initial !important";
+          msg.style.padding = "18px";
+          msg.style.background = "rgb(25, 42, 86)";
+          msg.style.color = "white";
+          msg.style.position = "fixed";
+          msg.style.fontSize = "16px";
+          msg.style.zIndex = "10000001";
+          msg.style.height = "60px";
+          msg.style.width = "230px";
+          // msg.style.padding = "18px";
+          document.body.appendChild(msg);
+
+          // remove notification after 5sec
+
+          setTimeout(function () {
+            let element = document.getElementById("step-created-msg");
+            element.remove();
+          }, 3000);
+        }
+
+        // get element text
+        console.log("current focused element--->", CURRENT_FOCUSED_ELEMENT.target.value);
+        console.log("current focused element value--->", CURRENT_FOCUSED_ELEMENT.target.innerText);
+        let element_text = "";
+        if (CURRENT_FOCUSED_ELEMENT.target.innerText && CURRENT_FOCUSED_ELEMENT.target.innerText !== "") {
+          console.log("inside innder text");
+          element_text = CURRENT_FOCUSED_ELEMENT.target.innerText;
+        } else if (CURRENT_FOCUSED_ELEMENT.target.value) {
+          console.log("inside innder text");
+          element_text = CURRENT_FOCUSED_ELEMENT.target.value;
+        }
+
+        if (e.target.value === "element_validation") {
+          let xpath = _this.locatorBuilders.buildAll(CURRENT_FOCUSED_ELEMENT.target);
+          // get element xpath
+          xpath = await filterxpath(xpath.locators);
+          console.log(" elements xpath", xpath);
+          x.removeChild(document.getElementById("validation-action-row"));
+          var action_row = document.createElement("div");
+          action_row.setAttribute("id", "validation-action-row-element");
+          // action row css
+          action_row.style.display = "flex";
+          action_row.style.justifyContent = "center";
+          /* align-items: center; */
+          action_row.style.flexDirection = "column";
+          action_row.style.padding = "10px";
+          action_row.style.marginTop = "8px";
+          action_row.style.width = "100%";
+          action_row.style.background = "rgba(60,64,67,.30)";
+
+          let action_label = document.createElement("span");
+          action_label.setAttribute("id", "validation-action-label");
+          action_label.innerText = "ACTION";
+          action_label.style.fontFamily = "inherit";
+
+          let action_showdetails = document.createElement("div");
+          action_showdetails.setAttribute("id", "validation-action-showdetails");
+          // css
+          action_showdetails.style.display = "flex";
+          action_showdetails.style.justifyContent = "center";
+          action_showdetails.style.flexDirection = "column";
+          action_showdetails.style.fontFamily = "inherit";
+          action_showdetails.style.marginTop = "15px";
+          action_showdetails.style.fontSize = "15px";
+          // }
+
+          let contain_text_header = document.createElement("span");
+          contain_text_header.setAttribute("id", "valiadtion-contain-text-header");
+          contain_text_header.innerText = "ELEMENT";
+
+          let contain_text_value = document.createElement("input");
+          contain_text_value.setAttribute("id", "validation-contains-input-text");
+          contain_text_value.setAttribute("disabled", true);
+          contain_text_value.setAttribute("value", xpath.length > 0 ? xpath[0] : "");
+          contain_text_value.style.padding = "6px";
+          contain_text_value.style.fontSize = "15px";
+          contain_text_value.style.boxShadow = "none";
+          contain_text_value.style.border = "none";
+          contain_text_value.style.marginTop = "5px";
+          contain_text_value.style.color = "black";
+          contain_text_value.style.background = "#ffffffa8";
+
+          // Save step button
+          let save_btn_container = document.createElement("div");
+          save_btn_container.setAttribute("id", "validation-save-step-button-container");
+          // css
+          save_btn_container.style.display = "flex";
+          save_btn_container.style.justifyContent = "flex-end";
+          save_btn_container.style.marginTop = "15px";
+          save_btn_container.style.height = "30px";
+
+          let save_step_button = document.createElement("button");
+          save_step_button.setAttribute("id", "validation-save-step-button");
+          // css
+          save_step_button.innerText = "SAVE STEP";
+          save_step_button.style.background = "#ffff";
+          save_step_button.style.fontSize = "15px";
+          save_step_button.style.fontFamily = "inherit";
+          save_step_button.style.border = "none";
+          save_step_button.style.cursor = "pointer";
+          save_step_button.style.fontWeight = "600";
+          save_step_button.style.color = "black";
+
+          save_step_button.onclick = saveSteps;
+
+          save_btn_container.appendChild(save_step_button);
+
+          //
+          action_showdetails.appendChild(contain_text_header);
+          action_showdetails.appendChild(contain_text_value);
+
+          action_row.appendChild(action_label);
+          action_row.appendChild(action_showdetails);
+          action_row.appendChild(save_btn_container);
+
+          x.appendChild(action_row);
+        }
+        // else if (e.target.value === "text_validation") {
+        else {
+          let removed_ele = document.getElementById("validation-action-row-element");
+          console.log("find-ele", removed_ele);
+          if (removed_ele) {
+            console.log("remove element ---->");
+            x.removeChild(document.getElementById("validation-action-row-element"));
+          }
+
+          // ---------Action Row
+          var action_row = document.createElement("div");
+          action_row.setAttribute("id", "validation-action-row");
+          // action row css
+          action_row.style.display = "flex";
+          action_row.style.justifyContent = "center";
+          /* align-items: center; */
+          action_row.style.flexDirection = "column";
+          action_row.style.padding = "10px";
+          action_row.style.marginTop = "8px";
+          action_row.style.width = "100%";
+          action_row.style.background = "rgba(60,64,67,.30)";
+
+          let action_label = document.createElement("span");
+          action_label.setAttribute("id", "validation-action-label");
+          action_label.innerText = "ACTION";
+          action_label.style.fontFamily = "inherit";
+
+          let action_showdetails = document.createElement("div");
+          action_showdetails.setAttribute("id", "validation-action-showdetails");
+          // css
+          action_showdetails.style.display = "flex";
+          action_showdetails.style.justifyContent = "center";
+          action_showdetails.style.flexDirection = "column";
+          action_showdetails.style.fontFamily = "inherit";
+          action_showdetails.style.marginTop = "15px";
+          action_showdetails.style.fontSize = "15px";
+          // }
+
+          let contain_text_header = document.createElement("span");
+          contain_text_header.setAttribute("id", "valiadtion-contain-text-header");
+          contain_text_header.innerText = "INPUT TEXT";
+
+          let contain_text_value = document.createElement("input");
+          contain_text_value.setAttribute("id", "validation-contains-input-text");
+          contain_text_value.setAttribute("disabled", true);
+          contain_text_value.setAttribute("value", element_text);
+          contain_text_value.style.padding = "6px";
+          contain_text_value.style.fontSize = "15px";
+          contain_text_value.style.boxShadow = "none";
+          contain_text_value.style.border = "none";
+          contain_text_value.style.marginTop = "5px";
+          contain_text_value.style.color = "black";
+          contain_text_value.style.background = "#ffffffa8";
+
+          // Save step button
+          let save_btn_container = document.createElement("div");
+          save_btn_container.setAttribute("id", "validation-save-step-button-container");
+          // css
+          save_btn_container.style.display = "flex";
+          save_btn_container.style.justifyContent = "flex-end";
+          save_btn_container.style.marginTop = "15px";
+          save_btn_container.style.height = "30px";
+
+          let save_step_button = document.createElement("button");
+          save_step_button.setAttribute("id", "validation-save-step-button");
+          // css
+          save_step_button.innerText = "SAVE STEP";
+          save_step_button.style.background = "#ffff";
+          save_step_button.style.fontSize = "15px";
+          save_step_button.style.fontFamily = "inherit";
+          save_step_button.style.border = "none";
+          save_step_button.style.cursor = "pointer";
+          save_step_button.style.fontWeight = "600";
+          save_step_button.style.color = "black";
+
+          save_step_button.onclick = saveSteps;
+
+          save_btn_container.appendChild(save_step_button);
+
+          //
+          action_showdetails.appendChild(contain_text_header);
+          action_showdetails.appendChild(contain_text_value);
+
+          action_row.appendChild(action_label);
+          action_row.appendChild(action_showdetails);
+          action_row.appendChild(save_btn_container);
+
+          x.appendChild(action_row);
+
+          // ------------------Completed-------------
+        }
+      }
+
+      var overlay = document.createElement("div");
+      overlay.setAttribute("id", "overlay-ele");
+      overlay.style;
+      overlay.style.position = "fixed";
+      overlay.style.top = "0";
+      overlay.style.left = "0";
+      overlay.style.width = "100%";
+      overlay.style.height = "100%";
+      overlay.style.backgroundColor = "rgb(16 15 15 / 61%)";
+      overlay.style.cursor = "pointer";
+
+      // var x = document.createElement("div");
+
+      x.setAttribute("id", "validation-div");
+      x.style;
+      x.style.display = "flex";
+      x.style.justifyContent = "center";
+      x.style.alignItems = "center";
+      x.style.flexDirection = "column";
+      x.style.bottom = "0";
+      x.style.left = "0";
+      x.style.top = "350px";
+      // x.style.left = "900px";
+      x.style.cursor = "initial !important";
+      x.style.padding = "15px";
+      x.style.background = "#192a56";
+      x.style.color = "white";
+      x.style.position = "relative";
+      x.style.fontSize = "16px";
+      x.style.zIndex = "10000001";
+      // x.style.height = "65px";
+      x.style.maxWidth = "300px";
+
+      var newList = document.createElement("select");
+      newList.setAttribute("id", "validation-dropdown");
+      var newListData = new Option("Text Validation", "text_validation");
+      // newListData = new Option("ele_validation", "Element Validation");
+
+      newList.appendChild(newListData);
+      newList.appendChild(new Option("Element Validation", "element_validation"));
+      // newList.setAttribute("onChange", "fun()");
+      newList.onchange = selectValidation;
+      newList.style;
+      newList.style.width = "200px";
+      newList.style.height = "30px";
+      newList.style.borderRadius = "2px";
+      newList.style.outline = "none";
+      newList.style.fontSize = "17px";
+      newList.style.background = "#ffff";
+      newList.style.color = "black";
+
+      x.appendChild(newList);
+
+      overlay.appendChild(x);
+
+      document.body.appendChild(overlay);
+      selectValidation(e);
+
+      // this.remove();
     }
   };
 
   // on mouse out, remove the dotted outline
-  onMouseOutEvent = e => {
+  onMouseOutEvent = (e) => {
     // if (ANCHOR_MODE) {
     e.target.style.outline = "0px";
     // }
   };
 
   // left mouse click
-  leftClickEvent = e => {
+  leftClickEvent = (e) => {
     // if trusted, then only record it
     console.log("clicked event ---->", e);
 
@@ -220,17 +541,17 @@ export class EventRecorder {
   };
 
   // right click event
-  contextMenuEvent = e => {
+  contextMenuEvent = (e) => {
     this.recordStep(e, "MOUSERCLICK");
   };
 
   // double click event
-  doubleClickEvent = e => {
+  doubleClickEvent = (e) => {
     this.recordStep(e, "MOUSEDCLICK");
   };
 
   // input and textarea events
-  onBlur = e => {
+  onBlur = (e) => {
     if (["input", "textarea"].includes(e.target.tagName.toLowerCase())) {
       if (!["checkbox", "radio"].includes(e.target.type.toLowerCase())) {
         this.recordStep(e, "KEY");
@@ -239,7 +560,7 @@ export class EventRecorder {
   };
 
   // input and textarea events
-  onKeyDown = e => {
+  onKeyDown = (e) => {
     if (["input", "textarea"].includes(e.target.tagName.toLowerCase())) {
       if (!["checkbox", "radio"].includes(e.target.type.toLowerCase())) {
         this.recordStep(e, "KEY");
@@ -248,7 +569,7 @@ export class EventRecorder {
   };
 
   // for dropdown event
-  onchangeEvent = e => {
+  onchangeEvent = (e) => {
     // console.log("dropdown", e);
 
     if (["select"].includes(e.target.tagName.toLowerCase())) {
@@ -257,10 +578,10 @@ export class EventRecorder {
   };
 
   // drag and drop events
-  onDragEvent = e => {
+  onDragEvent = (e) => {
     this.recordStep(e, "DRAG");
   };
-  onDropEvent = e => {
+  onDropEvent = (e) => {
     this.recordStep(e, "DROP");
   };
 
@@ -269,7 +590,7 @@ export class EventRecorder {
    * @returns {void} - nothing
    * @description sends message from content script to background script
    */
-  sendMessage = msg => {
+  sendMessage = (msg) => {
     try {
       if (chrome.runtime && chrome.runtime.onMessage) {
         if (!chrome.runtime.lastError) {
@@ -296,7 +617,7 @@ export class EventRecorder {
         action: "fileupload",
         value: value,
         frameLocation: frame,
-        props
+        props,
       });
     } else if (type === "KEY") {
       this.sendMessage({
@@ -304,7 +625,7 @@ export class EventRecorder {
         action: "text_input",
         value: value,
         frameLocation: frame,
-        props
+        props,
       });
     } else if (type === "DROPDOWN") {
       const sendObj = {
@@ -312,7 +633,7 @@ export class EventRecorder {
         action: "dropdown",
         value: e.target ? e.target.value : "",
         frameLocation: frame,
-        props
+        props,
       };
       // console.log("dropdown props -------------->", sendObj);
 
@@ -325,7 +646,7 @@ export class EventRecorder {
         value: e.target ? e.target.value : "",
         frameLocation: frame,
         props,
-        xpath
+        xpath,
       });
     } else if (type === "DROP") {
       this.sendMessage({
@@ -334,7 +655,7 @@ export class EventRecorder {
         value: e.target ? e.target.value : "",
         frameLocation: frame,
         props,
-        xpath
+        xpath,
       });
     } else if (type === "mouseover") {
       this.sendMessage({
@@ -343,7 +664,7 @@ export class EventRecorder {
         value: e.target ? e.target.value : "",
         frameLocation: frame,
         props,
-        xpath
+        xpath,
       });
     } else if (type === "ANCHOR") {
       this.sendMessage({
@@ -351,14 +672,15 @@ export class EventRecorder {
         action: "anchor",
         value: "",
         frameLocation: frame,
-        props
+        props,
       });
     } else {
       const sendObj = {
         type: "RECORD_POST",
         action: type.toLowerCase(),
         frameLocation: frame,
-        props
+        props,
+        value: value,
       };
       // if the element has value, then add it
       if (["radio", "checkbox"].includes(e.target.nodeName.toLowerCase())) {
@@ -397,16 +719,30 @@ export class EventRecorder {
     }
     console.log(sendObject);
 
-    // console.log(frameObject)
+    if (
+      sendObject.attributes.id !== "overlay-ele" &&
+      sendObject.attributes.id !== "validation-div" &&
+      sendObject.attributes.id !== "validation-dropdown" &&
+      sendObject.attributes.id !== "validation-action-row" &&
+      sendObject.attributes.id !== "validation-action-label" &&
+      sendObject.attributes.id !== "validation-action-showdetails" &&
+      sendObject.attributes.id !== "valiadtion-contain-text-header" &&
+      sendObject.attributes.id !== "validation-contains-input-text" &&
+      sendObject.attributes.id !== "validation-action-row-element" &&
+      sendObject.attributes.id !== "validation-save-step-button-container" &&
+      sendObject.attributes.id !== "validation-save-step-button"
+    ) {
+      await this.sendUpdate(e, type, sendObject, value, frame);
+    }
 
     // send the collected data to background script
-    await this.sendUpdate(e, type, sendObject, value, frame);
   };
 
   /**
    * @description inject event listeners in the page
    */
   start = () => {
+    let keysPressed = {};
     // last argument "true" is for useCapture flag.
     // more: https://stackoverflow.com/questions/29922682/onclick-priority-over-addeventlistener-in-javascript
 
@@ -424,9 +760,23 @@ export class EventRecorder {
     // window.document.addEventListener("drop", this.onDropEvent, true);
     document.addEventListener("click", this.getData);
     document.addEventListener("mouseover", this.draw);
-    window.document.addEventListener("mouseover", this.onMouseOverEvent, true);
+    window.document.addEventListener("mouseover", this.onmouseoverevent, true);
     window.document.addEventListener("mouseout", this.onMouseOutEvent, true);
     window.document.addEventListener("mousemove", this.onMouseMoveEvent, true);
+    // window.document.addEventListener("dblclick", this.showValidationList);
+    document.addEventListener("keydown", (event) => {
+      console.log("keydown event trigger", event);
+      keysPressed[event.key] = true;
+
+      if (keysPressed["Control"] && event.key === "b") {
+        console.log("----------------->", event.key);
+        this.showValidationList(event, "show");
+      }
+    });
+    document.addEventListener("keyup", (event) => {
+      console.log("key up---------->");
+      delete keysPressed[event.key];
+    });
   };
 
   /**
@@ -442,9 +792,10 @@ export class EventRecorder {
     // window.document.removeEventListener("dragstart", this.onDragEvent);
     // window.document.removeEventListener("drop", this.onDropEvent);
     document.removeEventListener("mouseover", this.draw);
-    window.document.removeEventListener("mouseover", this.onMouseOverEvent);
+    window.document.removeEventListener("mouseover", this.onmouseoverevent);
     window.document.removeEventListener("mouseout", this.onMouseOutEvent);
     window.document.removeEventListener("mousemove", this.onMouseMoveEvent);
+    // window.document.addEventListener("dblclick", this.showValidationList);
   };
 
   // This part of code is copyright by Software Freedom Conservancy(SFC)
@@ -475,7 +826,7 @@ export class EventRecorder {
       // create new function so that the variables have new scope.
       function register() {
         var handlers = EventRecorder.eventHandlers[eventKey];
-        var listener = function(event) {
+        var listener = function (event) {
           for (var i = 0; i < handlers.length; i++) {
             handlers[i].call(self, event);
           }
@@ -523,7 +874,7 @@ export class EventRecorder {
   }
 
   record(event, command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-    console.log("event.target --------->", event.target);
+    console.log("event.target --------->", event.target.value);
     console.log("locators builder ----------->", this.locatorBuilders.buildAll(event.target));
 
     let self = this;
@@ -536,7 +887,7 @@ export class EventRecorder {
       props: target,
       value: value,
       insertBeforeLastCommand: insertBeforeLastCommand,
-      frameLocation: actualFrameLocation != undefined ? actualFrameLocation : this.frameLocation
+      frameLocation: actualFrameLocation != undefined ? actualFrameLocation : this.frameLocation,
       // framelocationelement: this.framelocationelement
     };
     console.log(result);
@@ -554,7 +905,7 @@ export class EventRecorder {
 }
 
 EventRecorder.eventHandlers = {};
-EventRecorder.addEventHandler = function(handlerName, eventName, handler, options) {
+EventRecorder.addEventHandler = function (handlerName, eventName, handler, options) {
   handler.handlerName = handlerName;
   if (!options) options = false;
   let key = options ? "C_" + eventName : eventName;
@@ -601,7 +952,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 var typeTarget;
 var typeLock = 0;
 EventRecorder.inputTypes = ["text", "password", "file", "checkbox", "datetime", "datetime-local", "date", "month", "time", "week", "number", "range", "email", "url", "search", "tel", "color"];
-EventRecorder.addEventHandler("type", "change", function(event) {
+EventRecorder.addEventHandler("type", "change", function (event) {
   // © Chen-Chieh Ping, SideeX Team
 
   if (event.target.tagName && !preventType && typeLock == 0 && (typeLock = 1)) {
@@ -650,7 +1001,7 @@ EventRecorder.addEventHandler("type", "change", function(event) {
   typeLock = 0;
 });
 
-EventRecorder.addEventHandler("type", "input", function(event) {
+EventRecorder.addEventHandler("type", "input", function (event) {
   //console.log(event.target);
   typeTarget = event.target;
 });
@@ -660,7 +1011,7 @@ var preventClickTwice = false;
 EventRecorder.addEventHandler(
   "clickAt",
   "click",
-  function(event) {
+  function (event) {
     if (event.button == 0 && event.isTrusted) {
       if (!preventClickTwice) {
         var top = event.pageY,
@@ -704,11 +1055,11 @@ EventRecorder.addEventHandler(
 
         this.clickLocator = true;
         preventClickTwice = true;
-        setTimeout(function() {
+        setTimeout(function () {
           preventClick = false;
         }, 200);
       }
-      setTimeout(function() {
+      setTimeout(function () {
         preventClickTwice = false;
       }, 30);
     }
@@ -721,7 +1072,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "doubleClickAt",
   "dblclick",
-  function(event) {
+  function (event) {
     var top = event.pageY,
       left = event.pageX;
     var element = event.target;
@@ -744,13 +1095,13 @@ var preventType = false;
 var inp = document.getElementsByTagName("input");
 for (var i = 0; i < inp.length; i++) {
   if (EventRecorder.inputTypes.indexOf(inp[i].type) >= 0) {
-    inp[i].addEventListener("focus", function(event) {
+    inp[i].addEventListener("focus", function (event) {
       focusTarget = event.target;
       focusValue = focusTarget.value;
       tempValue = focusValue;
       preventType = false;
     });
-    inp[i].addEventListener("blur", function(event) {
+    inp[i].addEventListener("blur", function (event) {
       focusTarget = null;
       focusValue = null;
       tempValue = null;
@@ -765,7 +1116,7 @@ var enterTarget = null;
 EventRecorder.addEventHandler(
   "sendKeys",
   "keydown",
-  function(event) {
+  function (event) {
     if (event.target.tagName) {
       var key = event.keyCode;
       var tagName = event.target.tagName.toLowerCase();
@@ -780,7 +1131,7 @@ EventRecorder.addEventHandler(
           //   preventType = true;
           // }
           setTimeout(
-            function() {
+            function () {
               if (!preventClick) {
                 this.record(event, "KEY", this.locatorBuilders.buildAll(enterTarget), "${KEY_ENTER}");
               }
@@ -803,7 +1154,7 @@ EventRecorder.addEventHandler(
           //   preventType = true;
           // }
           setTimeout(
-            function() {
+            function () {
               this.record(event, "KEY", this.locatorBuilders.buildAll(event.target), "${KEY_TAB}");
             }.bind(this),
             200
@@ -816,7 +1167,7 @@ EventRecorder.addEventHandler(
           //   preventType = true;
           // }
           setTimeout(
-            function() {
+            function () {
               this.record(event, "KEY", this.locatorBuilders.buildAll(event.target), "${KEY_ESC}");
             }.bind(this),
             200
@@ -835,22 +1186,49 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "dragAndDrop",
   "mousedown",
-  function(event) {
-    console.log("mousedown");
+  function (event) {
+    console.log("mousedown", event.target);
+    if (
+      event.target.id !== "validation-div" &&
+      event.target.id !== "validation-dropdown" &&
+      event.target.id !== "validation-action-row" &&
+      event.target.id !== "validation-action-label" &&
+      event.target.id !== "validation-action-showdetails" &&
+      event.target.id !== "valiadtion-contain-text-header" &&
+      event.target.id !== "validation-contains-input-text" &&
+      event.target.id !== "validation-action-row-element" &&
+      event.target.id !== "validation-save-step-button-container"
+      // event.target.id !== "validation-save-step-button"
+    ) {
+      let element = document.getElementById("validation-div");
+      let overlay_element = document.getElementById("overlay-ele");
+      if (element) {
+        if (event.target.id === "validation-save-step-button") {
+          setTimeout(function () {
+            element.remove();
+            overlay_element.remove();
+          }, 3000);
+        } else {
+          element.remove();
+          overlay_element.remove();
+        }
+      }
+    }
+
     console.log(event);
 
     var self = this;
     if (event.clientX < window.document.documentElement.clientWidth && event.clientY < window.document.documentElement.clientHeight) {
       this.mousedown = event;
       this.mouseup = setTimeout(
-        function() {
+        function () {
           delete self.mousedown;
         }.bind(this),
         200
       );
 
       this.selectMouseup = setTimeout(
-        function() {
+        function () {
           self.selectMousedown = event;
         }.bind(this),
         200
@@ -879,7 +1257,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "dragAndDrop",
   "mouseup",
-  function(event) {
+  function (event) {
     console.log("mouseup");
     console.log(event);
 
@@ -904,7 +1282,8 @@ EventRecorder.addEventHandler(
         this.selectMousedown &&
         event.button === 0 &&
         x + y &&
-        (event.clientX < window.document.documentElement.clientWidth && event.clientY < window.document.documentElement.clientHeight) &&
+        event.clientX < window.document.documentElement.clientWidth &&
+        event.clientY < window.document.documentElement.clientHeight &&
         getSelectionText() === ""
       ) {
         var sourceRelateX = this.selectMousedown.pageX - this.selectMousedown.target.getBoundingClientRect().left - window.scrollX;
@@ -938,7 +1317,7 @@ EventRecorder.addEventHandler(
           console.log("from mouseup");
 
           setTimeout(
-            function() {
+            function () {
               if (!self.clickLocator) this.record(event, "MOUSELCLICK", target, "");
             }.bind(this),
             100
@@ -960,12 +1339,12 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "dragAndDropToObject",
   "dragstart",
-  function(event) {
+  function (event) {
     console.log("dragstart.....", event);
     this.record(event, "dragStartObject", this.locatorBuilders.buildAll(event.target), "");
     var self = this;
     this.dropLocator = setTimeout(
-      function() {
+      function () {
         self.dragstartLocator = event;
       }.bind(this),
       200
@@ -979,7 +1358,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "dragAndDropToObject",
   "drop",
-  function(event) {
+  function (event) {
     console.log("ondrop .....", event);
 
     clearTimeout(this.dropLocator);
@@ -1000,13 +1379,13 @@ var prevTimeOut = null;
 EventRecorder.addEventHandler(
   "runScript",
   "scroll",
-  function(event) {
+  function (event) {
     if (pageLoaded === true) {
       var self = this;
       this.scrollDetector = event.target;
       clearTimeout(prevTimeOut);
       prevTimeOut = setTimeout(
-        function() {
+        function () {
           delete self.scrollDetector;
         }.bind(self),
         500
@@ -1068,7 +1447,7 @@ var nowNode = 0;
 EventRecorder.addEventHandler(
   "mouseOut",
   "mouseout",
-  function(event) {
+  function (event) {
     // _info("MOUSEOUT")
     // event.target.style.outline = "0px";
     if (this.mouseoutLocator !== null && event.target === this.mouseoutLocator) {
@@ -1084,7 +1463,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "mouseOver",
   "DOMNodeInserted",
-  function(event) {
+  function (event) {
     // _error("DOMNodeInserted")
     // console.log(event);
     if (pageLoaded === true && window.document.documentElement.getElementsByTagName("*").length > nowNode) {
@@ -1098,7 +1477,7 @@ EventRecorder.addEventHandler(
         // ], '');
         pageLoaded = false;
         setTimeout(
-          function() {
+          function () {
             pageLoaded = true;
           }.bind(self),
           550
@@ -1124,7 +1503,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "DOMAttrModified",
   "DOMAttrModified",
-  function(event) {
+  function (event) {
     _error("DOMAttrModified");
     console.log(event);
   },
@@ -1137,7 +1516,7 @@ var pageLoaded = true;
 EventRecorder.addEventHandler(
   "checkPageLoaded",
   "readystatechange",
-  function(event) {
+  function (event) {
     var self = this;
     if (window.document.readyState === "loading") {
       pageLoaded = false;
@@ -1145,7 +1524,7 @@ EventRecorder.addEventHandler(
       pageLoaded = false;
       clearTimeout(readyTimeOut);
       readyTimeOut = setTimeout(
-        function() {
+        function () {
           pageLoaded = true;
         }.bind(self),
         1500
@@ -1160,7 +1539,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "contextMenu",
   "contextmenu",
-  function(event) {
+  function (event) {
     var myPort = chrome.runtime.connect();
     var tmpText = this.locatorBuilders.buildAll(event.target);
     var tmpVal = getText(event.target);
@@ -1187,7 +1566,7 @@ var checkFocus = 0;
 EventRecorder.addEventHandler(
   "editContent",
   "focus",
-  function(event) {
+  function (event) {
     var editable = event.target.contentEditable;
     if (editable == "true") {
       getEle = event.target;
@@ -1203,7 +1582,7 @@ EventRecorder.addEventHandler(
 EventRecorder.addEventHandler(
   "editContent",
   "blur",
-  function(event) {
+  function (event) {
     if (checkFocus == 1) {
       if (event.target == getEle) {
         if (getEle.innerHTML != contentTest) {
@@ -1218,21 +1597,21 @@ EventRecorder.addEventHandler(
 // END
 
 chrome.runtime.sendMessage({
-  attachRecorderRequest: true
+  attachRecorderRequest: true,
 });
 
 // Copyright 2005 Shinya Kasatani
-EventRecorder.prototype.getOptionLocator = function(option) {
+EventRecorder.prototype.getOptionLocator = function (option) {
   var label = option.text.replace(/^ *(.*?) *$/, "$1");
   if (label.match(/\xA0/)) {
     // if the text contains &nbsp;
     return (
       "label=regexp:" +
       label
-        .replace(/[\(\)\[\]\\\^\$\*\+\?\.\|\{\}]/g, function(str) {
+        .replace(/[\(\)\[\]\\\^\$\*\+\?\.\|\{\}]/g, function (str) {
           return "\\" + str;
         })
-        .replace(/\s+/g, function(str) {
+        .replace(/\s+/g, function (str) {
           if (str.match(/\xA0/)) {
             if (str.length > 1) {
               return "\\s+";
@@ -1249,7 +1628,7 @@ EventRecorder.prototype.getOptionLocator = function(option) {
   }
 };
 
-EventRecorder.prototype.findClickableElement = function(e) {
+EventRecorder.prototype.findClickableElement = function (e) {
   if (!e.tagName) return null;
   var tagName = e.tagName.toLowerCase();
   var type = e.type;
@@ -1275,7 +1654,7 @@ EventRecorder.prototype.findClickableElement = function(e) {
 EventRecorder.addEventHandler(
   "select",
   "focus",
-  function(event) {
+  function (event) {
     console.log(event);
 
     if (event.target.nodeName) {
@@ -1294,7 +1673,7 @@ EventRecorder.addEventHandler(
   true
 );
 
-EventRecorder.addEventHandler("select", "change", function(event) {
+EventRecorder.addEventHandler("select", "change", function (event) {
   console.log("select------------->", event);
 
   if (event.target.tagName) {
