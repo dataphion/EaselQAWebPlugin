@@ -39,7 +39,7 @@ class GreetingComponent extends React.Component {
     selected_playback: "select", // selected testsession for playback
     selected_application: "select", // selected application for playback
     features: [], // existing features
-    speed: 5000 // testcase execution speed
+    speed: 5000, // testcase execution speed
   };
 
   /**
@@ -55,26 +55,26 @@ class GreetingComponent extends React.Component {
   componentDidMount() {
     const that = this;
     // set the last action if present
-    chrome.storage.local.get("current_action", item => {
+    chrome.storage.local.get("current_action", (item) => {
       if (item.current_action) {
         this.setState({ mode: item.current_action });
       }
     });
 
     // set the speed if present, else set the default one
-    chrome.storage.local.get("execution_speed", item => {
+    chrome.storage.local.get("execution_speed", (item) => {
       if (item.execution_speed) {
         this.setState({ speed: item.execution_speed });
       } else {
         // set the default delay if it is not set
-        chrome.storage.local.set({ execution_speed: constant.default_playback_speed }, function() {
+        chrome.storage.local.set({ execution_speed: constant.default_playback_speed }, function () {
           console.log(`execution_speed was not present. set to ${constant.default_playback_speed} successfully`);
         });
       }
     });
 
     // get the login status
-    chrome.storage.sync.get(["login", "login_email"], result => {
+    chrome.storage.sync.get(["login", "login_email"], (result) => {
       if (result.login) {
         that.setState({ is_logged_in: true, logged_in_as: result.login_email });
       } else {
@@ -83,7 +83,7 @@ class GreetingComponent extends React.Component {
     });
 
     // get the host status
-    chrome.storage.sync.get(["is_host_registered", "hostname"], result => {
+    chrome.storage.sync.get(["is_host_registered", "hostname"], (result) => {
       if (Object.keys(result).length === 0 && result.constructor === Object) {
         that.setState({ hostname: "" });
       } else {
@@ -95,7 +95,7 @@ class GreetingComponent extends React.Component {
   /**
    * @description update the state based on the name of the input field
    */
-  setInput = e => {
+  setInput = (e) => {
     if (e.target.name === "record_url") {
       this.setState({ record_url: e.target.value });
     } else if (e.target.name === "record_application") {
@@ -120,7 +120,7 @@ class GreetingComponent extends React.Component {
       this.setState({
         // mode: "root",
         is_host_registered: true,
-        hostname: e.target.value
+        hostname: e.target.value,
       });
       chrome.storage.sync.set({ is_host_registered: true, hostname: e.target.value }, () => {});
     }
@@ -129,14 +129,14 @@ class GreetingComponent extends React.Component {
   /**
    * @description change the testcase speed and store it in chrome storage
    */
-  speedChange = e => {
-    chrome.storage.local.set({ execution_speed: e }, function() {});
+  speedChange = (e) => {
+    chrome.storage.local.set({ execution_speed: e }, function () {});
   };
 
   /**
    * @description used by the react slider to render the tooltip component
    */
-  handle = props => {
+  handle = (props) => {
     const { value, dragging, index, ...restProps } = props;
     return (
       <Tooltip prefixCls="rc-slider-tooltip" overlay={value} visible={dragging} placement="top" key={index}>
@@ -152,7 +152,7 @@ class GreetingComponent extends React.Component {
     let strapi_url_graphql = await giveUrl("strapi_url_graphql");
     // console.log("get graphql url", strapi_url_graphql);
 
-    chrome.storage.local.get("login_id", item => {
+    chrome.storage.local.get("login_id", (item) => {
       const login_id = item.login_id;
 
       if (login_id) {
@@ -160,7 +160,7 @@ class GreetingComponent extends React.Component {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Accept: "application/json"
+            Accept: "application/json",
           },
           body: JSON.stringify({
             query: `query {
@@ -183,11 +183,11 @@ class GreetingComponent extends React.Component {
 								}
 							  }
 							}
-						  }`
-          })
+						  }`,
+          }),
         })
-          .then(res => res.json())
-          .then(res => {
+          .then((res) => res.json())
+          .then((res) => {
             // console.log("res ---->", res);
 
             const data = {};
@@ -197,14 +197,14 @@ class GreetingComponent extends React.Component {
               const temp = {
                 name: app.name,
                 id: app.id,
-                testcases: []
+                testcases: [],
               };
               for (const testcase of app["testcases"]) {
                 temp.testcases.push({ name: testcase.name, id: testcase.id });
                 if (testcase.feature) {
                   features.push({
                     id: testcase.feature.id,
-                    name: testcase.feature.name
+                    name: testcase.feature.name,
                   });
                 }
               }
@@ -213,10 +213,10 @@ class GreetingComponent extends React.Component {
 
             this.setState({
               formatted_data: data,
-              features: _.uniqBy(features, "id")
+              features: _.uniqBy(features, "id"),
             });
           })
-          .catch(err => {
+          .catch((err) => {
             console.log(err);
           });
       }
@@ -258,7 +258,7 @@ class GreetingComponent extends React.Component {
               }
 
               const port = chrome.extension.connect({
-                name: "start_recording"
+                name: "start_recording",
               });
 
               port.postMessage({
@@ -268,7 +268,7 @@ class GreetingComponent extends React.Component {
                 newFeature,
                 record_feature,
                 record_url,
-                record_application
+                record_application,
               });
 
               chrome.storage.local.set({ current_action: "record_in_execution" });
@@ -297,7 +297,7 @@ class GreetingComponent extends React.Component {
    */
   recordAnchor = () => {
     const port = chrome.extension.connect({
-      name: "record_anchor"
+      name: "record_anchor",
     });
     port.postMessage({ type: "ANCHOR" });
     window.close();
@@ -305,7 +305,7 @@ class GreetingComponent extends React.Component {
 
   CapturePagination = () => {
     const port = chrome.extension.connect({
-      name: "record_Grid_pagination"
+      name: "record_Grid_pagination",
     });
     port.postMessage({ type: "GRID" });
     window.close();
@@ -316,7 +316,7 @@ class GreetingComponent extends React.Component {
    */
   stopRecording = () => {
     const port = chrome.extension.connect({
-      name: "stop_recording"
+      name: "stop_recording",
     });
     port.postMessage({ type: "STOP" });
     chrome.storage.local.set({ current_action: "root" });
@@ -332,11 +332,11 @@ class GreetingComponent extends React.Component {
     if (this.state.selected_application) {
       if (this.state.selected_playback) {
         const port = chrome.extension.connect({
-          name: "play_test"
+          name: "play_test",
         });
         port.postMessage({
           type: "PLAY_TEST",
-          data: this.state.selected_playback
+          data: this.state.selected_playback,
         });
         window.close();
       } else {
@@ -381,21 +381,21 @@ class GreetingComponent extends React.Component {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Accept: "application/json"
+            Accept: "application/json",
           },
           body: JSON.stringify({
             identifier: this.state.email,
-            password: this.state.password
-          })
+            password: this.state.password,
+          }),
         })
-          .then(res => res.json())
-          .then(res => {
+          .then((res) => res.json())
+          .then((res) => {
             if (res.user !== undefined) {
               chrome.storage.sync.set({ login: true, login_email: that.state.email }, () => {
                 that.setState({
                   mode: "root",
                   is_logged_in: true,
-                  logged_in_as: that.state.email
+                  logged_in_as: that.state.email,
                 });
               });
               chrome.storage.local.set({ login_id: res.user.id }, () => {
@@ -406,7 +406,7 @@ class GreetingComponent extends React.Component {
               alert("Verification Failed. Please verify the credentials.");
             }
           })
-          .catch(err => {
+          .catch((err) => {
             alert("Oops! Verification Failed");
             console.log("Error in the user verification");
             console.log(err);
@@ -425,7 +425,7 @@ class GreetingComponent extends React.Component {
         this.setState({
           // mode: "root",
           is_host_registered: true,
-          hostname: this.state.hostname
+          hostname: this.state.hostname,
         });
       });
     }
@@ -436,7 +436,7 @@ class GreetingComponent extends React.Component {
    */
   logout = () => {
     const that = this;
-    chrome.storage.sync.set({ login: false, login_email: "" }, function() {
+    chrome.storage.sync.set({ login: false, login_email: "" }, function () {
       that.setState({ is_logged_in: false });
     });
   };
@@ -476,13 +476,13 @@ class GreetingComponent extends React.Component {
             <ReactTooltip id="logout-tooltip" place="top" type="dark" effect="solid">
               Logout
             </ReactTooltip>
-            <div className="action-icon" data-tip="record-tooltip" data-for="record-tooltip" onClick={e => this.setState({ mode: "record" })}>
+            <div className="action-icon" data-tip="record-tooltip" data-for="record-tooltip" onClick={(e) => this.setState({ mode: "record" })}>
               <div className="record" />
             </div>
-            <div className="action-icon" data-tip="run-tooltip" data-for="run-tooltip" onClick={e => this.setState({ mode: "run" })}>
+            <div className="action-icon" data-tip="run-tooltip" data-for="run-tooltip" onClick={(e) => this.setState({ mode: "run" })}>
               <div className="run" />
             </div>
-            <div className="action-icon" data-tip="logout-tooltip" data-for="logout-tooltip" onClick={e => this.logout()}>
+            <div className="action-icon" data-tip="logout-tooltip" data-for="logout-tooltip" onClick={(e) => this.logout()}>
               <div className="logout" />
             </div>
           </div>
@@ -500,7 +500,7 @@ class GreetingComponent extends React.Component {
     for (const app_id in this.state.formatted_data) {
       available_applications.push({
         id: app_id,
-        name: this.state.formatted_data[app_id]["name"]
+        name: this.state.formatted_data[app_id]["name"],
       });
     }
 
@@ -508,7 +508,7 @@ class GreetingComponent extends React.Component {
       return (
         <div className="inner-menu-container">
           <div className="heading">
-            <div className="back-button" onClick={e => this.setState({ mode: "root" })} />
+            <div className="back-button" onClick={(e) => this.setState({ mode: "root" })} />
             <div className="inner-menu-title">Record a new testcase</div>
           </div>
           <div className="inner-menu-content">
@@ -592,14 +592,14 @@ class GreetingComponent extends React.Component {
       for (const app_id in this.state.formatted_data) {
         applications.push({
           id: app_id,
-          name: this.state.formatted_data[app_id]["name"]
+          name: this.state.formatted_data[app_id]["name"],
         });
       }
 
       return (
         <div className="inner-menu-container">
           <div className="heading">
-            <div className="back-button" onClick={e => this.setState({ mode: "root" })} />
+            <div className="back-button" onClick={(e) => this.setState({ mode: "root" })} />
             <div className="inner-menu-title">Play the recorded testcase</div>
           </div>
           <div className="inner-menu-content">
@@ -607,7 +607,7 @@ class GreetingComponent extends React.Component {
               <option defaultChecked value="select">
                 Select Application
               </option>
-              {applications.map(data => {
+              {applications.map((data) => {
                 return <option value={data.id}>{data.name}</option>;
               })}
             </select>
@@ -624,7 +624,7 @@ class GreetingComponent extends React.Component {
                   <option defaultChecked value="select">
                     Select Testcase
                   </option>
-                  {this.state.formatted_data[this.state.selected_application]["testcases"].map(testcase => {
+                  {this.state.formatted_data[this.state.selected_application]["testcases"].map((testcase) => {
                     return <option value={testcase.id}>{testcase.name}</option>;
                   })}
                 </select>
@@ -648,7 +648,7 @@ class GreetingComponent extends React.Component {
                 trackStyle={{
                   backgroundColor: "#1DD1A1",
                   height: 4,
-                  borderRadius: 2
+                  borderRadius: 2,
                 }}
                 handleStyle={{
                   borderColor: "white",
@@ -656,14 +656,14 @@ class GreetingComponent extends React.Component {
                   width: 12,
                   marginLeft: -4,
                   marginTop: -4,
-                  backgroundColor: "#45b4e2"
+                  backgroundColor: "#45b4e2",
                 }}
                 railStyle={{
                   backgroundColor: "#feca57",
                   height: 4,
-                  borderRadius: 2
+                  borderRadius: 2,
                 }}
-                tipFormatter={value => `${value} Milliseconds`}
+                tipFormatter={(value) => `${value} Milliseconds`}
               />
               <div className="inline-title right">SLOW</div>
             </div>
@@ -729,7 +729,7 @@ class GreetingComponent extends React.Component {
               onChange={this.setInput}
               name="hostname"
               className="record-input"
-              placeholder="e.g. localhost:1337"
+              placeholder="http://localhost:1337"
               style={{ marginBottom: 8 }}
             />
             <div className="divider" />
@@ -739,7 +739,7 @@ class GreetingComponent extends React.Component {
             <input type="email" onChange={this.setInput} name="email" className="record-input first-input-margin" placeholder="registered email" />
             <div className="nested">
               <input type="password" onChange={this.setInput} name="password" className="record-input" placeholder="password" />
-              <div className="inner-menu-button-container" onClick={e => this.performLogin()}>
+              <div className="inner-menu-button-container" onClick={(e) => this.performLogin()}>
                 <div className="unlock-icon" />
               </div>
             </div>
