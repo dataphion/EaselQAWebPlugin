@@ -1412,48 +1412,48 @@ EventRecorder.addEventHandler(
 // © Shuo-Heng Shih, SideeX Team
 var nowNode = 0;
 // ---------- EXTRA HOVER EVENT HANDLER------------------------
-// EventRecorder.addEventHandler(
-//   "mouseOver",
-//   "mouseover",
-//   function(event) {
-//     // _error("MOUSEOVER")
-//     // console.log(event);
-//     event.target.style.outline = "1px dotted #333 !important";
+EventRecorder.addEventHandler(
+  "mouseOver",
+  "mouseover",
+  function(event) {
+    // _error("MOUSEOVER")
+    // console.log(event);
+    event.target.style.outline = "1px dotted #333 !important";
 
-//     if (window.document.documentElement) nowNode = window.document.documentElement.getElementsByTagName("*").length;
-//     var self = this;
-//     if (pageLoaded === true) {
-//       this.mouseoverelement = event;
-//       var clickable = this.findClickableElement(event.target);
-//       // console.log("is element clickableeeeeeeeeeeee---------->", clickable);
+    if (window.document.documentElement) nowNode = window.document.documentElement.getElementsByTagName("*").length;
+    var self = this;
+    if (pageLoaded === true) {
+      this.mouseoverelement = event;
+      var clickable = this.findClickableElement(event.target);
+      // console.log("is element clickableeeeeeeeeeeee---------->", clickable);
 
-//       if (clickable) {
-//         this.nodeInsertedLocator = event.target;
-//         setTimeout(
-//           function() {
-//             delete self.nodeInsertedLocator;
-//           }.bind(self),
-//           500
-//         );
+      if (clickable) {
+        this.nodeInsertedLocator = event.target;
+        setTimeout(
+          function() {
+            delete self.nodeInsertedLocator;
+          }.bind(self),
+          500
+        );
 
-//         this.nodeAttrChange = this.locatorBuilders.buildAll(event.target);
-//         this.nodeAttrChangeTimeout = setTimeout(
-//           function() {
-//             delete self.nodeAttrChange;
-//           }.bind(self),
-//           10
-//         );
-//       }
-//       //drop target overlapping
-//       if (this.mouseoverQ) {
-//         //mouse keep down
-//         if (this.mouseoverQ.length >= 3) this.mouseoverQ.shift();
-//         this.mouseoverQ.push(event);
-//       }
-//     }
-//   },
-//   true
-// );
+        this.nodeAttrChange = this.locatorBuilders.buildAll(event.target);
+        this.nodeAttrChangeTimeout = setTimeout(
+          function() {
+            delete self.nodeAttrChange;
+          }.bind(self),
+          10
+        );
+      }
+      //drop target overlapping
+      if (this.mouseoverQ) {
+        //mouse keep down
+        if (this.mouseoverQ.length >= 3) this.mouseoverQ.shift();
+        this.mouseoverQ.push(event);
+      }
+    }
+  },
+  true
+);
 // END
 
 // © Shuo-Heng Shih, SideeX Team
