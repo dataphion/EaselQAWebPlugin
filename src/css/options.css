@@ -1,0 +1,20 @@
+#phion_cursor {
+	z-index: -1;
+	position: absolute;
+	height: 60px;
+	width: 60px;
+	border: 1px solid #F39678;
+	border-radius: 30px;
+	box-sizing: border-box;
+	animation-name: fillCircle;
+	animation-duration: 3s;
+	animation-timing-function: ease-in;
+	animation-iteration-count: 1;
+	box-shadow: 0 0 30px rgba(0,0,0,0.75);
+}
+
+@keyframes fillCircle {
+	0% {border: 1px solid #F39678;}
+	99% {border: 30px solid #F39678;}
+	100% {border: 0 !important; display: none; visibility: hidden;}
+}
