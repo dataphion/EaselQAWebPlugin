@@ -1,11 +1,10 @@
-
 ## Usage
 1. `yarn` or `npm install`
 2. `yarn start` or `npm start`
 3. Go to [chrome extensions page](chrome://extensions/)
 4. Click on **Load unpacked**
 5. Browse the **build** folder of the project
-
+6. Test mirroring
 
 ## Important Notes
 The localstorage can hold up to max 5MB data
